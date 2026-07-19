@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ScreamDetector, simulateScreamDetection } from './utils/screamDetector';
-import DashboardPage from './pages/DashboardPage';
 import MapPage from './pages/MapPage';
 import AuthPage from './pages/AuthPage';
 import RegisterPage from './pages/RegisterPage';
+import AdminDashboard from './pages/AdminDashboard';
 import UserDashboard from './pages/UserDashboard';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -128,27 +128,17 @@ function AppShell() {
       </header>
 
       <Routes>
-        <Route path="/" element={user?.role === 'admin' ? (
-          <>
-            <section className="grid cards">
-              {summaryCards.map((card) => (
-                <article key={card.label} className="panel card">
-                  <h3>{card.label}</h3>
-                  <p className="big-number">{card.value}</p>
-                </article>
-              ))}
-            </section>
-            <DashboardPage dashboard={dashboard} incidents={incidents} evidence={evidence} screamScore={screamScore} status={status} />
-            <div className="panel action-row">
-              <button onClick={submitIncident}>Create manual incident</button>
-            </div>
-          </>
-        ) : (
+        <Route path="/" element={user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/user" replace />} />
+        <Route path="/admin" element={user?.role === 'admin' ? (
+          <AdminDashboard dashboard={dashboard} incidents={incidents} evidence={evidence} status={status} onCreateIncident={submitIncident} />
+        ) : <Navigate to="/login" replace />} />
+        <Route path="/user" element={user?.role === 'user' ? (
           <UserDashboard user={user} incidents={incidents} evidence={evidence} status={status} />
-        )} />
-        <Route path="/map" element={<MapPage />} />
-        <Route path="/register" element={<RegisterPage onSwitch={() => window.location.assign('/')} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        ) : <Navigate to="/login" replace />} />
+        <Route path="/map" element={user?.role === 'admin' ? <MapPage /> : <Navigate to="/login" replace />} />
+        <Route path="/login" element={!token ? <AuthPage /> : <Navigate to={user?.role === 'admin' ? '/admin' : '/user'} replace />} />
+        <Route path="/register" element={!token ? <RegisterPage onSwitch={() => window.location.assign('/login')} /> : <Navigate to={user?.role === 'admin' ? '/admin' : '/user'} replace />} />
+        <Route path="*" element={<Navigate to={user?.role === 'admin' ? '/admin' : '/user'} replace />} />
       </Routes>
     </div>
   );
