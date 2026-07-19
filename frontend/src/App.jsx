@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ScreamDetector, simulateScreamDetection } from './utils/screamDetector';
+import DashboardPage from './pages/DashboardPage';
+import AuthPage from './pages/AuthPage';
+import MapPage from './pages/MapPage';
 
 const defaultUser = {
   email: 'admin@echoshield.ai',
@@ -13,6 +16,7 @@ function App() {
   const [status, setStatus] = useState('Monitoring');
   const [screamScore, setScreamScore] = useState(0);
   const [auth, setAuth] = useState(defaultUser);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
     fetchDashboard();
@@ -47,18 +51,17 @@ function App() {
     setEvidence(data);
   };
 
-  const login = async (event) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
+  const login = async ({ email, password }) => {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: form.get('email'), password: form.get('password') })
+      body: JSON.stringify({ email, password })
     });
     const data = await response.json();
     if (data.user) {
       setAuth(data.user);
       setStatus(`Signed in as ${data.user.email}`);
+      setActiveTab('dashboard');
     }
   };
 
@@ -101,57 +104,31 @@ function App() {
         </div>
       </header>
 
-      <section className="grid cards">
-        {summaryCards.map((card) => (
-          <article key={card.label} className="panel card">
-            <h3>{card.label}</h3>
-            <p className="big-number">{card.value}</p>
-          </article>
-        ))}
-      </section>
+      <nav className="tabs">
+        <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>Dashboard</button>
+        <button className={activeTab === 'map' ? 'active' : ''} onClick={() => setActiveTab('map')}>Map</button>
+        <button className={activeTab === 'auth' ? 'active' : ''} onClick={() => setActiveTab('auth')}>Auth</button>
+      </nav>
 
-      <section className="grid two-col">
-        <div className="panel">
-          <h2>Live audio monitoring</h2>
-          <p>Current scream confidence: <strong>{Math.round(screamScore)}%</strong></p>
-          <button onClick={submitIncident}>Create manual incident</button>
-          <form onSubmit={login} className="login-form">
-            <input name="email" defaultValue="admin@echoshield.ai" />
-            <input name="password" defaultValue="demo1234" type="password" />
-            <button type="submit">Log in</button>
-          </form>
-        </div>
-        <div className="panel">
-          <h2>Incident feed</h2>
-          <ul className="feed">
-            {incidents.slice(0, 6).map((incident) => (
-              <li key={incident.id}>
-                <strong>{incident.title}</strong>
-                <span>{incident.severity}</span>
-              </li>
+      {activeTab === 'dashboard' && (
+        <>
+          <section className="grid cards">
+            {summaryCards.map((card) => (
+              <article key={card.label} className="panel card">
+                <h3>{card.label}</h3>
+                <p className="big-number">{card.value}</p>
+              </article>
             ))}
-          </ul>
-        </div>
-      </section>
+          </section>
+          <DashboardPage dashboard={dashboard} incidents={incidents} evidence={evidence} screamScore={screamScore} status={status} />
+          <div className="panel action-row">
+            <button onClick={submitIncident}>Create manual incident</button>
+          </div>
+        </>
+      )}
 
-      <section className="grid two-col">
-        <div className="panel">
-          <h2>Evidence storage</h2>
-          <ul className="feed">
-            {evidence.map((item) => <li key={item.name}>{item.name}</li>)}
-          </ul>
-        </div>
-        <div className="panel">
-          <h2>Operational modules</h2>
-          <ul className="feed">
-            <li>Automatic camera recording</li>
-            <li>Zoho Catalyst integration</li>
-            <li>Geofencing and GPS tracking</li>
-            <li>Cloud evidence storage</li>
-            <li>Notification dispatch</li>
-          </ul>
-        </div>
-      </section>
+      {activeTab === 'map' && <MapPage />}
+      {activeTab === 'auth' && <AuthPage onLogin={login} />}
     </div>
   );
 }
