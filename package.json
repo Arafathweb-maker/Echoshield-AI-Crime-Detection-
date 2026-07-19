@@ -1,0 +1,26 @@
+{
+  "name": "echoshield-ai-crime-detection",
+  "version": "1.0.0",
+  "description": "AI-Powered Automatic Crime Detection & Evidence Collection System",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run dev\"",
+    "frontend:dev": "cd frontend && npm run dev",
+    "backend:dev": "cd backend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "backend:start": "cd backend && npm start",
+    "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+  },
+  "keywords": [
+    "crime-detection",
+    "ai",
+    "safety",
+    "emergency",
+    "zoho-catalyst"
+  ],
+  "author": "Arafathweb-maker",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
