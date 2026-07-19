@@ -9,6 +9,17 @@ const defaultUser = {
   role: 'admin'
 };
 
+function getApiUrl(pathname) {
+  const customBase = import.meta.env.VITE_API_URL || '';
+  const normalizedPath = pathname.startsWith('/') ? pathname : `/${pathname}`;
+
+  if (!customBase) {
+    return normalizedPath.startsWith('/api') ? normalizedPath : `/api${normalizedPath}`;
+  }
+
+  return `${customBase.replace(/\/$/, '')}${normalizedPath.startsWith('/api') ? normalizedPath : `/api${normalizedPath}`}`;
+}
+
 function App() {
   const [dashboard, setDashboard] = useState(null);
   const [incidents, setIncidents] = useState([]);
@@ -34,25 +45,25 @@ function App() {
   }, []);
 
   const fetchDashboard = async () => {
-    const response = await fetch('/api/dashboard');
+    const response = await fetch(getApiUrl('/dashboard'));
     const data = await response.json();
     setDashboard(data);
   };
 
   const fetchIncidents = async () => {
-    const response = await fetch('/api/incidents');
+    const response = await fetch(getApiUrl('/incidents'));
     const data = await response.json();
     setIncidents(data);
   };
 
   const fetchEvidence = async () => {
-    const response = await fetch('/api/evidence');
+    const response = await fetch(getApiUrl('/evidence'));
     const data = await response.json();
     setEvidence(data);
   };
 
   const login = async ({ email, password }) => {
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch(getApiUrl('/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -66,7 +77,7 @@ function App() {
   };
 
   const submitIncident = async () => {
-    const response = await fetch('/api/incidents', {
+    const response = await fetch(getApiUrl('/incidents'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -78,7 +89,7 @@ function App() {
       })
     });
     const data = await response.json();
-    setIncidents([data.incident, ...incidents]);
+    setIncidents((prev) => [data.incident, ...prev]);
     setStatus(`Incident ${data.incident.id} created`);
   };
 

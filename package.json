@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run dev\"",
+    "start": "concurrently \"cd frontend && npm run dev -- --host 0.0.0.0 --port 3000\" \"cd backend && npm start\"",
     "frontend:dev": "cd frontend && npm run dev",
     "backend:dev": "cd backend && npm run dev",
     "frontend:build": "cd frontend && npm run build",

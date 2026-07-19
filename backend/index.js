@@ -1,4 +1,5 @@
 require('dotenv').config();
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -15,18 +16,29 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', apiRoutes);
 app.use('/api/auth', authRoutes);
 
-const frontendPath = path.join(__dirname, '../frontend/public');
-app.use(express.static(frontendPath));
-app.get('/', (req, res) => res.sendFile(path.join(frontendPath, 'index.html')));
+const frontendDistPath = path.join(__dirname, '../frontend/dist');
+const frontendPublicPath = path.join(__dirname, '../frontend/public');
+const frontendStaticPath = fs.existsSync(frontendDistPath) ? frontendDistPath : frontendPublicPath;
+
+app.use(express.static(frontendStaticPath));
+app.get('/', (req, res) => res.sendFile(path.join(frontendStaticPath, 'index.html')));
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'Route not found' });
   }
-  return res.sendFile(path.join(frontendPath, 'index.html'));
+  return res.sendFile(path.join(frontendStaticPath, 'index.html'));
 });
 
-app.listen(port, () => {
-  console.log(`EchoShield backend running on http://localhost:${port}`);
-});
+function startServer(portNumber = port) {
+  const server = app.listen(portNumber, () => {
+    const actualPort = server.address().port;
+    console.log(`EchoShield backend running on http://localhost:${actualPort}`);
+  });
+  return server;
+}
 
-module.exports = app;
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = { app, startServer };
