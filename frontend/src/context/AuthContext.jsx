@@ -86,9 +86,14 @@ export function AuthProvider({ children }) {
   };
 
   const login = async (credentials) => {
+    const normalizedCredentials = {
+      ...credentials,
+      role: credentials.role || 'user'
+    };
+
     const data = await request('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify(credentials)
+      body: JSON.stringify(normalizedCredentials)
     });
 
     setToken(data.token);
@@ -98,9 +103,14 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (credentials) => {
+    const normalizedCredentials = {
+      ...credentials,
+      role: credentials.role || 'user'
+    };
+
     const data = await request('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify(credentials)
+      body: JSON.stringify(normalizedCredentials)
     });
 
     setToken(data.token);

@@ -48,11 +48,12 @@ function registerUser({ email, password, role = 'user', name = 'New User' }) {
     throw new Error('User already exists');
   }
 
+  const normalizedRole = role === 'admin' ? 'admin' : 'user';
   const user = {
     id: `user-${Date.now()}`,
     email,
     passwordHash: createHash(password),
-    role: role === 'admin' ? 'user' : role,
+    role: normalizedRole,
     name
   };
 

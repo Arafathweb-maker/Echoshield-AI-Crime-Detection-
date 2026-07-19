@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 
 function AuthPage() {
   const { login } = useAuth();
-  const [form, setForm] = useState({ email: 'admin@echoshield.ai', password: 'demo1234', role: 'admin' });
+  const [form, setForm] = useState({ email: '', password: '', role: 'user' });
   const [message, setMessage] = useState('');
 
   const handleSubmit = async (event) => {
@@ -19,7 +19,7 @@ function AuthPage() {
   return (
     <div className="panel auth-card">
       <h2>Secure sign in</h2>
-      <p>Access the EchoShield control center as an Admin or a regular User.</p>
+      <p>Select Admin or User to sign in to the matching dashboard.</p>
       <form onSubmit={handleSubmit} className="login-form auth-stack">
         <input name="email" placeholder="Email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required />
         <input name="password" placeholder="Password" type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required />

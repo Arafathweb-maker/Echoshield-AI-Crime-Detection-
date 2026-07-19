@@ -24,7 +24,8 @@ router.post('/login', (req, res) => {
 
 router.post('/register', (req, res) => {
   try {
-    const user = registerUser({ email: req.body.email, password: req.body.password, role: 'user', name: req.body.name || 'New User' });
+    const requestedRole = req.body.role === 'admin' ? 'admin' : 'user';
+    const user = registerUser({ email: req.body.email, password: req.body.password, role: requestedRole, name: req.body.name || 'New User' });
     const token = signToken({ sub: user.id, role: user.role });
     return res.status(201).json({
       token,

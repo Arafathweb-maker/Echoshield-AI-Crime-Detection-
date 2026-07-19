@@ -65,3 +65,15 @@ test('login returns a role-aware JWT payload', async () => {
   assert.equal(data.user.role, 'admin');
   assert.match(data.token, /^ey/);
 });
+
+test('user login succeeds when the user role is selected', async () => {
+  const response = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'user@echoshield.ai', password: 'demo1234', role: 'user' })
+  });
+
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.equal(data.user.role, 'user');
+});
