@@ -40,3 +40,28 @@ test('root route serves the frontend shell', async () => {
   assert.match(html, /EchoShield/i);
   assert.match(html, /<script/i);
 });
+
+test('register creates a normal user account', async () => {
+  const response = await fetch(`${baseUrl}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'newuser@example.com', password: 'StrongPass123!' })
+  });
+
+  assert.equal(response.status, 201);
+  const data = await response.json();
+  assert.equal(data.user.role, 'user');
+});
+
+test('login returns a role-aware JWT payload', async () => {
+  const response = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'admin@echoshield.ai', password: 'demo1234', role: 'admin' })
+  });
+
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.equal(data.user.role, 'admin');
+  assert.match(data.token, /^ey/);
+});

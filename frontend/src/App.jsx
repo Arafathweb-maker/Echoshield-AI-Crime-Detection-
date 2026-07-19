@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ScreamDetector, simulateScreamDetection } from './utils/screamDetector';
 import DashboardPage from './pages/DashboardPage';
-import AuthPage from './pages/AuthPage';
 import MapPage from './pages/MapPage';
-
-const defaultUser = {
-  email: 'admin@echoshield.ai',
-  role: 'admin'
-};
+import AuthPage from './pages/AuthPage';
+import RegisterPage from './pages/RegisterPage';
+import UserDashboard from './pages/UserDashboard';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 function getApiUrl(pathname) {
   const customBase = import.meta.env.VITE_API_URL || '';
@@ -20,19 +19,43 @@ function getApiUrl(pathname) {
   return `${customBase.replace(/\/$/, '')}${normalizedPath.startsWith('/api') ? normalizedPath : `/api${normalizedPath}`}`;
 }
 
-function App() {
+function AppShell() {
+  const { user, logout, token, request } = useAuth();
   const [dashboard, setDashboard] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [evidence, setEvidence] = useState([]);
   const [status, setStatus] = useState('Monitoring');
   const [screamScore, setScreamScore] = useState(0);
-  const [auth, setAuth] = useState(defaultUser);
-  const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
-    fetchDashboard();
-    fetchIncidents();
-    fetchEvidence();
+    if (!token) {
+      return;
+    }
+
+    const loadData = async () => {
+      try {
+        const dashboardData = await request(getApiUrl('/dashboard'));
+        setDashboard(dashboardData);
+      } catch (error) {
+        console.error(error);
+      }
+
+      try {
+        const incidentsData = await request(getApiUrl('/incidents'));
+        setIncidents(Array.isArray(incidentsData) ? incidentsData : []);
+      } catch (error) {
+        console.error(error);
+      }
+
+      try {
+        const evidenceData = await request(getApiUrl('/evidence'));
+        setEvidence(Array.isArray(evidenceData) ? evidenceData : []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    loadData();
 
     const detector = new ScreamDetector();
     detector.start((score) => setScreamScore(score)).then(() => setStatus('Listening for audio anomalies'));
@@ -42,55 +65,25 @@ function App() {
       detector.stop();
       cleanup();
     };
-  }, []);
-
-  const fetchDashboard = async () => {
-    const response = await fetch(getApiUrl('/dashboard'));
-    const data = await response.json();
-    setDashboard(data);
-  };
-
-  const fetchIncidents = async () => {
-    const response = await fetch(getApiUrl('/incidents'));
-    const data = await response.json();
-    setIncidents(data);
-  };
-
-  const fetchEvidence = async () => {
-    const response = await fetch(getApiUrl('/evidence'));
-    const data = await response.json();
-    setEvidence(data);
-  };
-
-  const login = async ({ email, password }) => {
-    const response = await fetch(getApiUrl('/auth/login'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await response.json();
-    if (data.user) {
-      setAuth(data.user);
-      setStatus(`Signed in as ${data.user.email}`);
-      setActiveTab('dashboard');
-    }
-  };
+  }, [request, token]);
 
   const submitIncident = async () => {
-    const response = await fetch(getApiUrl('/incidents'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: 'Manual patrol escalation',
-        description: 'Operator marked an incident through the dashboard.',
-        severity: 'high',
-        lat: 12.9716,
-        lng: 77.5946
-      })
-    });
-    const data = await response.json();
-    setIncidents((prev) => [data.incident, ...prev]);
-    setStatus(`Incident ${data.incident.id} created`);
+    try {
+      const data = await request(getApiUrl('/incidents'), {
+        method: 'POST',
+        body: JSON.stringify({
+          title: 'Manual patrol escalation',
+          description: 'Operator marked an incident through the dashboard.',
+          severity: 'high',
+          lat: 12.9716,
+          lng: 77.5946
+        })
+      });
+      setIncidents((prev) => [data.incident, ...prev]);
+      setStatus(`Incident ${data.incident.id} created`);
+    } catch (error) {
+      setStatus(error.message || 'Unable to create incident');
+    }
   };
 
   const summaryCards = useMemo(() => [
@@ -100,47 +93,74 @@ function App() {
     { label: 'High severity', value: dashboard?.highSeverity || 0 }
   ], [dashboard]);
 
+  if (!token) {
+    return (
+      <div className="shell auth-shell">
+        <header className="hero">
+          <div>
+            <p className="eyebrow">EchoShield AI Crime Detection</p>
+            <h1>Secure admin and citizen safety experience</h1>
+            <p className="subtitle">Role-based access control, incident reporting, evidence handling, and AI assistance in one responsive platform.</p>
+          </div>
+        </header>
+        <Routes>
+          <Route path="/register" element={<RegisterPage onSwitch={() => window.location.assign('/')} />} />
+          <Route path="*" element={<AuthPage />} />
+        </Routes>
+      </div>
+    );
+  }
+
   return (
     <div className="shell">
       <header className="hero">
         <div>
           <p className="eyebrow">EchoShield AI Crime Detection</p>
-          <h1>Multimodal safety intelligence for rapid response</h1>
+          <h1>{user?.role === 'admin' ? 'Admin control center' : 'Community safety workspace'}</h1>
           <p className="subtitle">Scream detection, automated recording, geofencing, and evidence collection in one secure control center.</p>
         </div>
         <div className="panel status-panel">
           <p><strong>Status:</strong> {status}</p>
-          <p><strong>User:</strong> {auth.email}</p>
-          <p><strong>Role:</strong> {auth.role}</p>
+          <p><strong>User:</strong> {user?.email}</p>
+          <p><strong>Role:</strong> {user?.role}</p>
+          <button onClick={logout}>Logout</button>
         </div>
       </header>
 
-      <nav className="tabs">
-        <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>Dashboard</button>
-        <button className={activeTab === 'map' ? 'active' : ''} onClick={() => setActiveTab('map')}>Map</button>
-        <button className={activeTab === 'auth' ? 'active' : ''} onClick={() => setActiveTab('auth')}>Auth</button>
-      </nav>
-
-      {activeTab === 'dashboard' && (
-        <>
-          <section className="grid cards">
-            {summaryCards.map((card) => (
-              <article key={card.label} className="panel card">
-                <h3>{card.label}</h3>
-                <p className="big-number">{card.value}</p>
-              </article>
-            ))}
-          </section>
-          <DashboardPage dashboard={dashboard} incidents={incidents} evidence={evidence} screamScore={screamScore} status={status} />
-          <div className="panel action-row">
-            <button onClick={submitIncident}>Create manual incident</button>
-          </div>
-        </>
-      )}
-
-      {activeTab === 'map' && <MapPage />}
-      {activeTab === 'auth' && <AuthPage onLogin={login} />}
+      <Routes>
+        <Route path="/" element={user?.role === 'admin' ? (
+          <>
+            <section className="grid cards">
+              {summaryCards.map((card) => (
+                <article key={card.label} className="panel card">
+                  <h3>{card.label}</h3>
+                  <p className="big-number">{card.value}</p>
+                </article>
+              ))}
+            </section>
+            <DashboardPage dashboard={dashboard} incidents={incidents} evidence={evidence} screamScore={screamScore} status={status} />
+            <div className="panel action-row">
+              <button onClick={submitIncident}>Create manual incident</button>
+            </div>
+          </>
+        ) : (
+          <UserDashboard user={user} incidents={incidents} evidence={evidence} status={status} />
+        )} />
+        <Route path="/map" element={<MapPage />} />
+        <Route path="/register" element={<RegisterPage onSwitch={() => window.location.assign('/')} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppShell />
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
