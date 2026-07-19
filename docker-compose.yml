@@ -1,0 +1,16 @@
+version: '3.9'
+services:
+  backend:
+    build: .
+    command: sh -c 'cd backend && npm start'
+    ports:
+      - '5000:5000'
+    environment:
+      PORT: 5000
+  frontend:
+    build: .
+    command: sh -c 'cd frontend && npm run dev -- --host 0.0.0.0 --port 3000'
+    ports:
+      - '3000:3000'
+    environment:
+      VITE_API_URL: http://backend:5000

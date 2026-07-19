@@ -1,0 +1,16 @@
+{
+  "name": "echoshield-backend",
+  "version": "1.0.0",
+  "description": "Backend API for EchoShield AI Crime Detection",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "node index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "cors": "^2.8.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.19.0"
+  }
+}
